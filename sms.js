@@ -7,7 +7,7 @@ async function sendSMS(number, message) {
       destinationAddresses: [number]
     }, {
       headers: {
-        Authorization: "APP_068022" // Add your Dialog API token here
+        Authorization: "Bearer YOUR_API_KEY"
       }
     });
 

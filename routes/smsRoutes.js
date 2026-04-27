@@ -8,14 +8,11 @@ router.post("/smsmo", (req, res) => {
 
   console.log("Incoming:", mobile, message);
 
-  // Subscribe user
-  if (message.toUpperCase().includes("veg")) {
-    db.query(
-      "INSERT IGNORE INTO customers (phone) VALUES (?)",
+  if (message && message.toUpperCase().includes("VEG")) {
+    db.run(
+      "INSERT OR IGNORE INTO customers (phone) VALUES (?)",
       [mobile],
-      () => {
-        console.log("Subscribed:", mobile);
-      }
+      () => console.log("Subscribed:", mobile)
     );
   }
 

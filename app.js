@@ -14,20 +14,19 @@ app.use("/", smsRoutes);
 app.use("/admin", adminRoutes);
 
 app.get("/", (req, res) => {
-  res.send("IdaMart SMS System Running");
+  res.send("IdaMart SMS System Running (SQLite)");
 });
 
-
-// ⏰ AUTO SEND DAILY (8 AM)
 const db = require("./db");
 const sendSMS = require("./sms");
 
+// Cron job (8 AM)
 cron.schedule("0 8 * * *", () => {
   console.log("Running daily SMS job...");
 
   const today = new Date().toISOString().split("T")[0];
 
-  db.query("SELECT * FROM prices WHERE date = ?", [today], (err, prices) => {
+  db.all("SELECT * FROM prices WHERE date = ?", [today], (err, prices) => {
     if (err) return;
 
     let message = "🥕 Daily Veg Prices\n\n";
@@ -36,10 +35,8 @@ cron.schedule("0 8 * * *", () => {
       message += `${p.item} - Rs.${p.price}\n`;
     });
 
-    db.query("SELECT * FROM customers", (err, users) => {
-      users.forEach(u => {
-        sendSMS(u.phone, message);
-      });
+    db.all("SELECT * FROM customers", [], (err, users) => {
+      users.forEach(u => sendSMS(u.phone, message));
     });
   });
 });

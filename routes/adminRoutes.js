@@ -3,18 +3,18 @@ const router = express.Router();
 const db = require("../db");
 const sendSMS = require("../sms");
 
-// Add daily prices
+// Add prices
 router.post("/add-prices", (req, res) => {
-  const { prices } = req.body; // [{item, price}]
-
+  const { prices } = req.body;
   const today = new Date().toISOString().split("T")[0];
 
+  const stmt = db.prepare("INSERT INTO prices (item, price, date) VALUES (?, ?, ?)");
+
   prices.forEach(p => {
-    db.query(
-      "INSERT INTO prices (item, price, date) VALUES (?, ?, ?)",
-      [p.item, p.price, today]
-    );
+    stmt.run(p.item, p.price, today);
   });
+
+  stmt.finalize();
 
   res.send("Prices added");
 });
@@ -23,27 +23,21 @@ router.post("/add-prices", (req, res) => {
 router.get("/send-sms", (req, res) => {
   const today = new Date().toISOString().split("T")[0];
 
-  db.query(
-    "SELECT * FROM prices WHERE date = ?",
-    [today],
-    (err, prices) => {
-      if (err) return res.send(err);
+  db.all("SELECT * FROM prices WHERE date = ?", [today], (err, prices) => {
+    if (err) return res.send(err);
 
-      let message = "🥕 Daily Veg Prices\n\n";
+    let message = "🥕 Daily Veg Prices\n\n";
 
-      prices.forEach(p => {
-        message += `${p.item} - Rs.${p.price}\n`;
-      });
+    prices.forEach(p => {
+      message += `${p.item} - Rs.${p.price}\n`;
+    });
 
-      db.query("SELECT * FROM customers", (err, users) => {
-        users.forEach(u => {
-          sendSMS(u.phone, message);
-        });
-      });
+    db.all("SELECT * FROM customers", [], (err, users) => {
+      users.forEach(u => sendSMS(u.phone, message));
+    });
 
-      res.send("SMS sent");
-    }
-  );
+    res.send("SMS sent");
+  });
 });
 
 module.exports = router;
